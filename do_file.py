@@ -1,19 +1,20 @@
 from PIL import Image, ImageDraw, ImageFont
-from sys import argv
+import os
+from loader import WIDTH_OF_REGION, HEIGHT_OF_REGION
 
-"""
-Укажите размер региона (Пока настраивается не автоматически)
-"""
-WIDTH_OF_REGION = 6
-HEIGHT_OF_REGION = int(WIDTH_OF_REGION * 2)
 
 char_map = {}
 
+
+def check_file(filename):
+    return os.path.exists(f"{filename}")
+
+
 def char_image(char):
     """
-    Получает картинку с символами нарисованными на ней
+    Получает картинку с символами нарисованными на ней символами
     :param char:
-    :return:
+    :return: chr
     """
     font = ImageFont.truetype("Menlo-Regular.woff", 40)
     image = Image.new('RGB', (50, 50), (255, 255, 255))
@@ -23,11 +24,11 @@ def char_image(char):
     return image
 
 
-def avg_gray_value(image):
+def avg_gray_value(image) -> int:
     """
     Получает значения серого картинки
     :param image:
-    :return:
+    :return: int
     """
     width, height = image.size
     total_pixels_value = width * height * 255
@@ -38,11 +39,11 @@ def avg_gray_value(image):
     return int(gray_value/total_pixels_value*10000)
 
 
-def split_image(image):
+def split_image(image) -> list:
     """
     Сплитит значения в список
     :param image:
-    :return:
+    :return: list
     """
     regions = []
     count = 0
@@ -54,7 +55,7 @@ def split_image(image):
     return regions
 
 
-def create_char_map(start_index, end_index):
+def create_char_map(start_index: int, end_index: int):
     """
     Создает карту, которая будет соединена со значениями
     :param start_index:
@@ -66,12 +67,11 @@ def create_char_map(start_index, end_index):
     fill_char_map()
 
 
-def load_characters(start_index, end_index):
+def load_characters(start_index: int, end_index: int):
     """
     Загружает уникальные серые значения в карту символов
-    :param start_index:
-    :param end_index:
-    :return:
+    :param start_index: int
+    :param end_index: int
     """
     for index in range(start_index, end_index):
         char_img = char_image(chr(index))
@@ -84,7 +84,6 @@ def load_characters(start_index, end_index):
 def normalize_char_map():
     """
     Рисует значения, самые темные 0, самые светлые 10
-    :return:
     """
     global char_map
     temp_map = {}
@@ -96,15 +95,14 @@ def normalize_char_map():
         if value < min_value:
             min_value = value
     for value in char_map:
-        tmp_value = int(((10000-0)*(value-min_value)) / (max_value-min_value) + 0)
-        temp_map.update({tmp_value: char_map.get(value)})
+        temp_value = int(((10000-0)*(value-min_value)) / (max_value-min_value) + 0)
+        temp_map.update({temp_value: char_map.get(value)})
     char_map = temp_map
 
 
 def fill_char_map():
     """
     Проверяет пустые значения
-    :return:
     """
     recent = None
     for index in range(0, 10001):
@@ -114,26 +112,10 @@ def fill_char_map():
             char_map.update({index: char_map.get(recent)})
 
 
-def print_char_map():
-    """
-    Дебаг
-    :return:
-    """
-    temp_list = []
-    for item in char_map:
-        list.append(item)
-    temp_list.sort()
-    print("Character Map:")
-    for item in temp_list:
-        print(item, char_map.get(item))
-    print("Total items in the character map:", len(char_map))
-
-
-def to_ascii(filename):
+def to_ascii(filename: str):
     """
     Собирает вместе и создает картинку ASCII
     :param filename:
-    :return:
     """
     image = Image.open(filename).convert('L')
     create_char_map(33, 750)
@@ -142,7 +124,7 @@ def to_ascii(filename):
     if len(regions) % columns != 0:
         columns -= 1
     for index in range(0, len(regions)):
-        with open(filename.replace(".jpg", ".txt"), "a", encoding="utf-8") as result:
+        with open(filename.replace(".jpg", ".txt"), "a", encoding="utf-16") as result:
             if index % columns == 0 and index != 0:
                 result.write("\n")
             result.write(char_map.get(avg_gray_value(regions[index])))
